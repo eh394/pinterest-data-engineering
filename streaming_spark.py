@@ -37,6 +37,10 @@ stream_df.writeStream \
 
 
 
+# Define two features and one way in which data needs to be cleaned
+# (1) convert tags string into a list and compute three most popular tags
+# (2)
+
 
 
 
