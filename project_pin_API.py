@@ -50,30 +50,12 @@ admin_client = KafkaAdminClient(
     client_id="Kafka Administrator"
 )
 
-# # topics must be passed as a list to the create_topics method
-# topics = []
-# topics.append(NewTopic(name="Pinterest", num_partitions=1, replication_factor=1))
-
-# # Topics to create must be passed as a list
-# admin_client.create_topics(new_topics=topics)
 
 pinterest_producer = KafkaProducer(
                 bootstrap_servers="localhost:9092",
                 client_id="pinterest data producer",
                 value_serializer=lambda message: dumps(message).encode("ascii")
             )
-
-
-# def run_infinite_post_data_loop():
-#     while True:
-#         sleep(random.randrange(0, 2))
-#         random_row = random.randint(0, 11000)
-#         connection = new_connector.create_db_connector() # had to add this line
-#         selected_row = connection.execute(sqlalchemy.text(f"SELECT * FROM pinterest_data LIMIT {random_row}, 1"))
-#         for row in selected_row.mappings().all(): # had to modify this line, read up 
-#             result = dict(row)
-#             pinterest_producer.send(topic='Pinterest', value=result)
-#         connection.close()
 
 
 @app.post("/pin/")

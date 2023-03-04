@@ -3,3 +3,5 @@ Superseded
 __pycache__
 kafka_notes.py
 db_creds.yaml
+data_engineering_notes.py
+aws_creds.py
