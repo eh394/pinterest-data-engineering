@@ -11,9 +11,9 @@ import re
 
 
 # Download spark sql kakfa package from Maven repository and submit to PySpark at runtime. 
-os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.2 pyspark-shell'
+# os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.2 pyspark-shell'
 
-# os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.2 org.postgresql:postgresql:42.5.4 pyspark-shell'
+os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.2,org.postgresql:postgresql:42.5.4 pyspark-shell'
 
 # --driver-class-path ~/Desktop/dev2/pinterest/postgresql-42.5.4.jar
 # org.postgresql:postgresql:42.5.4
@@ -27,6 +27,7 @@ kafka_bootstrap_servers = 'localhost:9092'
 spark = SparkSession \
         .builder \
         .appName("KafkaStreaming ") \
+        .config("spark.driver.extraClassPath", "~/Desktop/postgresql-42.5.4.jar") \
         .getOrCreate()
 
 # .config("spark.driver.extraClassPath", sparkClassPath) \
@@ -105,14 +106,14 @@ stream_df = stream_df.withColumn("image_src", udf(lambda x: None if x=="Image sr
 def for_each_batch_function(df, epoch_id):
     # df.printSchema()
     df.show()
-    # df.write \
-    # .format("jdbc") \
-    # .option("url", "jdbc:postgresql://localhost:5432/pinterest_data") \
-    # .option("driver", "org.postgresql.Driver") \
-    # .option("dbtable", "pinterest") \
-    # .option("user", "postgres") \
-    # .option("password", "Chadstone2610") \
-    # .save()
+    df.write \
+    .format("jdbc") \
+    .option("driver", "org.postgresql.Driver") \
+    .option("url", "jdbc:postgresql://localhost:5432/pinterest_data") \
+    .option("dbtable", "pinterest") \
+    .option("user", "postgres") \
+    .option("password", "Chadstone2610") \
+    .save()
 
 
 # .mode("overwrite") \
