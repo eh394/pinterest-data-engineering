@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, udf, from_json, lit, aggregate
+from pyspark.sql.functions import when, col, from_json, regexp_replace, split
 import pandas as pd
 from pyspark import SparkContext, SparkConf
 from pyspark.sql.types import StructType, StringType, IntegerType
@@ -67,12 +67,12 @@ def data_transformation(df):
                        .when(df.follower_count.endswith("M"),regexp_replace(df.follower_count,"M","000000")) \
                        .when(df.follower_count.isin(Follower_Error)==True,None) \
                        .otherwise(df.follower_count)) \
-                       .withColumn("follower_count",col("follower_count").cast("int"))
+                       .withColumn("follower_count",(col("follower_count")).cast("int"))
     
     # Replace invalid entries in the tag_list column with nulls and convert string to a list    
     df = df.withColumn("tag_list",
                        when(df.tag_list.isin(Tag_Error)==True,None) \
-                        .otherwise(split(col("tag_list"),",")))
+                        .otherwise(split(df.tag_list,",")))
     
     # Change is_image_or_video column name to file_type
     df = df.withColumnRenamed("is_image_or_video","file_type")
