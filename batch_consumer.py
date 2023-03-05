@@ -15,9 +15,7 @@ batch_consumer = KafkaConsumer(
 batch_consumer.subscribe(topics=["Pinterest"])
 
 
-
 s3_client = boto3.client('s3')
-
 
 # Loops through all messages in the consumer and prints them out individually
 # should write a condition that if these already exist the code does not execute. Also ideally files would not be stored locally, but saved as JSON directly in the s3.
