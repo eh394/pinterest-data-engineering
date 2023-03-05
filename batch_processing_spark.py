@@ -1,5 +1,4 @@
 from pyspark.sql import SparkSession
-# import pyspark.sql.functions as F
 from pyspark.sql.functions import col, udf, from_json, lit, aggregate
 import pandas as pd
 from pyspark import SparkContext, SparkConf
@@ -22,6 +21,7 @@ def read_aws_creds():
     with open("aws_creds.yaml", "r") as aws_creds_file:
         aws_creds = yaml.safe_load(aws_creds_file)
         return aws_creds
+aws_creds = read_aws_creds()
 
 # Configure the setting to read from the S3 bucket
 hadoopConf = sc._jsc.hadoopConfiguration()
@@ -37,28 +37,50 @@ batch_df = spark.read.json("s3a://pinterest-data-37618829-7b6c-41ce-bb70-80d47a6
 
 # DATA TRANSFORMATION
 def data_transformation(df):
+    # Define error states
+    Test_UUID = '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+    Title_Error = ["No Title Data Available"]
+    Description_Error = ["No description available", "No description available Story format"]
+    Follower_Error = ["User Info Error"]
+    Tag_Error = ["N,o, ,T,a,g,s, ,A,v,a,i,l,a,b,l,e"]
+    Src_Error = ["Image src error."]
+
+    # Replace invalid unique_id column entries with nulls
+    df = df.withColumn("unique_id",
+                       when(df.unique_id.rlike(Test_UUID)==False,None) \
+                       .otherwise(df.unique_id))
+    # how can you make sure the id values remain unique as you upload records into postgres?
+
+    # Replace invalid entries in the title column with nulls
+    df = df.withColumn("title",
+                       when(df.title.isin(Title_Error)==True,None) \
+                       .otherwise(df.title)) 
+                                                    
+    # Replace invalid entries in the description column with nulls
+    df = df.withColumn("description",
+                       when(df.description.isin(Description_Error)==True,None) \
+                       .otherwise(df.description)) \
+                     
+    # Convert follow_count entries to numeric and replace invalid entries with nulls
+    df = df.withColumn("follower_count",
+                       when(df.follower_count.endswith("k"),regexp_replace(df.follower_count,"k","000")) \
+                       .when(df.follower_count.endswith("M"),regexp_replace(df.follower_count,"M","000000")) \
+                       .when(df.follower_count.isin(Follower_Error)==True,None) \
+                       .otherwise(df.follower_count)) \
+                       .withColumn("follower_count",col("follower_count").cast("int"))
     
-    # Clean up unique_id column
-    df = df.withColumn("unique_id", udf(lambda x: x if re.match('^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$', str(x)) else None)("unique_id"))
-
-    # Clean up title column
-    df = df.withColumn("title", udf(lambda x: None if x=="No Title Data Available" else x)("title"))
-
-    # Clean up description column
-    df = df.withColumn("description", udf(lambda x: None if x=="No description available Story format" else x)("description"))
-
-    # Clean up the follower_count column
-    df = df.withColumn("follower_count", udf(lambda x: 1000*(int(x[:-1])) if x[-1]=="k" else (1000000*(int(x[:-1])) if x[-1]=='M' else (None if x=="User Info Error" else x)))("follower_count"))  
-
-    # Clean up tag_list column
-    df = df.withColumn("tag_list", udf(lambda x: x.split(","))("tag_list")) \
-        .withColumn("tag_list", udf(lambda x: None if x==["N", "o", " ", "T", "a", "g", "s", " ", "A", "v", "a", "i", "l", "a", "b", "l", "e"] else x)("tag_list"))
-
-    # Change 'is_image_or_video' column name into file_type
+    # Replace invalid entries in the tag_list column with nulls and convert string to a list    
+    df = df.withColumn("tag_list",
+                       when(df.tag_list.isin(Tag_Error)==True,None) \
+                        .otherwise(split(col("tag_list"),",")))
+    
+    # Change is_image_or_video column name to file_type
     df = df.withColumnRenamed("is_image_or_video","file_type")
 
-    # Clean up image_scr column
-    df = df.withColumn("image_src", udf(lambda x: None if x=="Image src error." else x)("image_src"))
+    # Replace invalid entries in the image_src column with nulls
+    df = df.withColumn("image_src",
+                       when(df.image_src.isin(Src_Error)==True,None) \
+                       .otherwise(df.image_src)) 
 
     return df
 
@@ -69,11 +91,4 @@ batch_df.collect()
 batch_df = batch_df.toPandas()
 print(batch_df[["unique_id", "follower_count", "tag_list", "file_type"]])
 # Would it make sense to save transformed data in postgres as for streaming?
-
-
-
-
-
-
-
 
