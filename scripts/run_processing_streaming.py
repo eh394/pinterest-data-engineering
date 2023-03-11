@@ -1,12 +1,19 @@
 from pyspark.sql.functions import col, from_json
 from pyspark.sql.types import IntegerType, StringType, StructType
-from lib.spark import streaming
+from lib.spark import SparkConnector
 from lib.utils import transform_pinterest_data, read_yaml_creds
 
-spark_session = streaming()
 
-# Only display Error messages in the console.
-spark_session.sparkContext.setLogLevel("ERROR")
+env_packages = "--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.2,org.postgresql:postgresql:42.5.4 pyspark-shell"
+
+
+spark_session = (
+    SparkConnector(env_packages, "KafkaStreaming")
+    .init_context()
+    .set_context_log_level("ERROR")
+    .get_session()
+)
+
 
 kafka_topic_name = "Pinterest"
 kafka_bootstrap_servers = 'localhost:9092'
