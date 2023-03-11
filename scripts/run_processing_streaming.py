@@ -1,80 +1,71 @@
-from pyspark.sql.functions import from_json, col
-from pyspark.sql.types import StructType, StringType, IntegerType
-import yaml
-from lib.data_utils import data_transformation
+from pyspark.sql.functions import col, from_json
+from pyspark.sql.types import IntegerType, StringType, StructType
 from lib.spark import streaming
+from lib.utils import transform_pinterest_data, read_yaml_creds
 
 # python -m src.run_processing_streaming.py
 
-spark = streaming()
+spark_session = streaming()
 
 # Only display Error messages in the console.
-spark.sparkContext.setLogLevel("ERROR")
+spark_session.sparkContext.setLogLevel("ERROR")
 
-# Specify the topic we want to stream data from.
 kafka_topic_name = "Pinterest"
-# Specify your Kafka server to read data from.
 kafka_bootstrap_servers = 'localhost:9092'
 
+stream_df_schema = (
+    StructType()
+    .add("category", StringType())
+    .add("index", IntegerType())
+    .add("unique_id", StringType())
+    .add("title", StringType())
+    .add("description", StringType())
+    .add("follower_count", StringType())
+    .add("tag_list", StringType())
+    .add("is_image_or_video", StringType())
+    .add("image_src", StringType())
+    .add("downloaded", IntegerType())
+    .add("save_location", StringType())
+)
+
 # Construct a streaming DataFrame that reads from topic
-stream_df = spark \
-        .readStream \
-        .format("kafka") \
-        .option("kafka.bootstrap.servers", kafka_bootstrap_servers) \
-        .option("subscribe", kafka_topic_name) \
-        .option("startingOffsets", "earliest") \
-        .load()
+stream_df = (
+    spark_session
+    .readStream
+    .format("kafka")
+    .option("kafka.bootstrap.servers", kafka_bootstrap_servers)
+    .option("subscribe", kafka_topic_name)
+    .option("startingOffsets", "earliest")
+    .load()
+)
 
 # Select the value part of the kafka message and cast it to a string.
 stream_df = stream_df.selectExpr("CAST(value as STRING)")
 stream_df = stream_df.select("value")
-
-# Create a schema
-stream_df_schema = (
-    StructType()
-    .add("category", StringType()) 
-    .add("index", IntegerType()) 
-    .add("unique_id", StringType()) 
-    .add("title", StringType()) 
-    .add("description", StringType()) 
-    .add("follower_count", StringType()) 
-    .add("tag_list", StringType()) 
-    .add("is_image_or_video", StringType()) 
-    .add("image_src", StringType()) 
-    .add("downloaded", IntegerType()) 
-    .add("save_location", StringType()) 
-)
-
 stream_df = stream_df.select(
-    from_json(col("value"), stream_df_schema).alias("sample")
-)
-
+    from_json(col("value"), stream_df_schema).alias("sample"))
 stream_df = stream_df.select("sample.*")
-
-# Clean and transform data
-stream_df = data_transformation(stream_df)
+stream_df = transform_pinterest_data(stream_df)
 
 # Load local Postgres database credentials
-def read_db_creds():
-    with open("./config/db_creds.yaml", "r") as db_creds_file:
-        db_creds = yaml.safe_load(db_creds_file)
-        return db_creds
-db_creds = read_db_creds()
+db_creds = read_yaml_creds("db_creds")
+
 
 # Define function writing records to the local Postgres database
-def for_each_batch_function(df, epoch_id):
+def for_each_batch_function(df, _epoch_id):
     df.show()
     df.write \
-    .format("jdbc") \
-    .mode("append") \
-    .option("driver", f"{db_creds['DRIVER']}") \
-    .option("url", f"{db_creds['URL']}") \
-    .option("dbtable", "pinterest") \
-    .option("user", f"{db_creds['USER']}") \
-    .option("password", f"{db_creds['PASSWORD']}") \
-    .save()
+        .format("jdbc") \
+        .mode("append") \
+        .option("driver", f"{db_creds['DRIVER']}") \
+        .option("url", f"{db_creds['URL']}") \
+        .option("dbtable", "pinterest") \
+        .option("user", f"{db_creds['USER']}") \
+        .option("password", f"{db_creds['PASSWORD']}") \
+        .save()
 
-# Writing transformed rows to local Postgres database 
+
+# Writing transformed rows to local Postgres database
 stream_df.writeStream \
     .trigger(processingTime="5 seconds") \
     .foreachBatch(for_each_batch_function) \
@@ -82,7 +73,7 @@ stream_df.writeStream \
     .start() \
     .awaitTermination()
 
-# # Outputting the messages to the console 
+# # Outputting the messages to the console
 # stream_df.writeStream \
 #     .format("console") \
 #     .outputMode("append") \
@@ -90,9 +81,6 @@ stream_df.writeStream \
 #     .awaitTermination()
 
 
-
 # Sample Code using aggregations
 # stream_df = stream_df.groupBy("category").count().orderBy(col("count").desc()).limit(1)
 # stream_df = stream_df.groupBy("is_image_or_video").count().orderBy(col("count").desc()).limit(1)
-
-
