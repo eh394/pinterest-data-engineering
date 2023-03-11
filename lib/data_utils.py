@@ -1,6 +1,6 @@
 
-from pyspark.sql.functions import when, col, from_json, regexp_replace, split
-# from pyspark.sql.types import StructType, StringType, IntegerType
+from pyspark.sql.functions import when, col, regexp_replace, split
+
 
 # Function that cleans and transforms pinterest data
 def data_transformation(df):
@@ -50,8 +50,3 @@ def data_transformation(df):
                        .otherwise(df.image_src)) 
 
     return df
-
-
-# Sample Code using aggregations
-# stream_df = stream_df.groupBy("category").count().orderBy(col("count").desc()).limit(1)
-# stream_df = stream_df.groupBy("is_image_or_video").count().orderBy(col("count").desc()).limit(1)

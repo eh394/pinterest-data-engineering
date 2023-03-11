@@ -2,12 +2,10 @@ import requests
 from time import sleep
 import random
 from multiprocessing import Process
-import boto3
 import json
 import sqlalchemy
 
-random.seed(100) # what does this line do? 
-
+random.seed(100)
 
 class AWSDBConnector:
 
@@ -30,7 +28,7 @@ def run_infinite_post_data_loop():
     while True:
         sleep(2)  #random.randrange(0, 2)
         random_row = random.randint(0, 11000)
-        connection = new_connector.create_db_connector() # had to add this line
+        connection = new_connector.create_db_connector() # had to add this line --> do we want to create a connection every time loop executes?
         selected_row = connection.execute(sqlalchemy.text(f"SELECT * FROM pinterest_data LIMIT {random_row}, 1"))
         for row in selected_row.mappings().all(): # had to modify this line, read up 
             result = dict(row)

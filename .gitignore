@@ -1,7 +1,4 @@
-temp
-Superseded
-__pycache__
-kafka_notes.py
 db_creds.yaml
-data_engineering_notes.py
 aws_creds.yaml
+__pycache__
+__pycache__/

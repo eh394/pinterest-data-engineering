@@ -1,26 +1,20 @@
-import os
-from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col
 from pyspark.sql.types import StructType, StringType, IntegerType
 import yaml
-from pyspark_utils import data_transformation
+from lib.data_utils import data_transformation
+from lib.spark import streaming
 
-# Download spark sql kakfa package from Maven repository and submit to PySpark at runtime. 
-os.environ['PYSPARK_SUBMIT_ARGS'] = '--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.2,org.postgresql:postgresql:42.5.4 pyspark-shell'
+# python -m src.run_processing_streaming.py
+
+spark = streaming()
+
+# Only display Error messages in the console.
+spark.sparkContext.setLogLevel("ERROR")
 
 # Specify the topic we want to stream data from.
 kafka_topic_name = "Pinterest"
 # Specify your Kafka server to read data from.
 kafka_bootstrap_servers = 'localhost:9092'
-
-# Create Spark session
-spark = SparkSession \
-        .builder \
-        .appName("KafkaStreaming") \
-        .getOrCreate()
-
-# Only display Error messages in the console.
-spark.sparkContext.setLogLevel("ERROR")
 
 # Construct a streaming DataFrame that reads from topic
 stream_df = spark \
@@ -62,7 +56,7 @@ stream_df = data_transformation(stream_df)
 
 # Load local Postgres database credentials
 def read_db_creds():
-    with open("db_creds.yaml", "r") as db_creds_file:
+    with open("./config/db_creds.yaml", "r") as db_creds_file:
         db_creds = yaml.safe_load(db_creds_file)
         return db_creds
 db_creds = read_db_creds()
@@ -94,4 +88,11 @@ stream_df.writeStream \
 #     .outputMode("append") \
 #     .start() \
 #     .awaitTermination()
+
+
+
+# Sample Code using aggregations
+# stream_df = stream_df.groupBy("category").count().orderBy(col("count").desc()).limit(1)
+# stream_df = stream_df.groupBy("is_image_or_video").count().orderBy(col("count").desc()).limit(1)
+
 
