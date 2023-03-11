@@ -3,8 +3,6 @@ from pyspark.sql.types import IntegerType, StringType, StructType
 from lib.spark import streaming
 from lib.utils import transform_pinterest_data, read_yaml_creds
 
-# python -m src.run_processing_streaming.py
-
 spark_session = streaming()
 
 # Only display Error messages in the console.

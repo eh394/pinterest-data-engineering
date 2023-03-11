@@ -1,8 +1,6 @@
 from lib.utils import transform_pinterest_data
 from lib.spark import batch
 
-# python -m src.run_processing_batch.py
-
 spark_session = batch()
 s3_bucket_id = "s3a://pinterest-data-37618829-7b6c-41ce-bb70-80d47a6e490c/"
 
