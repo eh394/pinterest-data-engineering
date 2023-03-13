@@ -25,7 +25,7 @@ The code is organized in two main folders /lib and /scripts.
 
 1. spark.py
 Includes class SparkConnector used to instantiate a spark session for both, batch and stream pipelines.
-1. utils.py
+2. utils.py
 Includes two functions:
 - transform_pinterest_data: this function performs cleaning operations on the data.
 - read_yaml_creds: this function is used to retrieve credentials for AWS S3 bucket and Postrgres databases stored in a local /config folder.
@@ -36,12 +36,12 @@ Includes two functions:
 - run_pinterest_api.py: FastAPI is utilised to emulate Pinterest's API.
 - run_pinterest_emulation.py: Code aims at emulating user posting data, here sqalchemy is utilised to load the data from AWS database.
 
-1. Batch Pipeline:
+2. Batch Pipeline:
 - run_pinterest_to_s3_batch.py: Using Kafka and boto3, the pinterest data is sent to AWS S3 bucket.
 - run_processing_batch.py: Spark session is crated using SparkConnector class from spark.py and data is transformed with transform_pinterest_data function from utils.py
 - run_airflow_batch.py: contains DAG orchestrating batch processing.
 
-1. Stream Pipeline:
+3. Stream Pipeline:
 - run_processing_streaming.py: Spark session is crated using SparkConnector class from spark.py and data is transformed with transform_pinterest_data function from utils.py. Following transformation data is sent to a local Postgres database.
 
 
@@ -77,7 +77,7 @@ airflow webserver --port 8080
 Airflow orchestrates the following tasks:
 start_zookeeper >> start_kafka >> run_batch_processing >> close kafka >> close_zookeeper
 
-1. Stream Pipeline
+2. Stream Pipeline
 
 In order for the stream pipeline to run, the following files / code need to be executed:
 STEP 1 - Start Zookeeper
