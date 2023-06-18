@@ -1,5 +1,6 @@
 from lib.utils import transform_pinterest_data
 from lib.spark import SparkConnector
+import pandas as pd
 
 
 env_packages = "--packages com.amazonaws:aws-java-sdk-s3:1.12.196,org.apache.hadoop:hadoop-aws:3.3.2 pyspark-shell"
@@ -20,5 +21,6 @@ batch_df = spark_session.read.json(s3_bucket_id)
 batch_df = transform_pinterest_data(batch_df)
 batch_df.collect()
 batch_df = batch_df.toPandas()
+batch_df.to_json("test.json")
 
 print(batch_df[["unique_id", "follower_count", "tag_list", "file_type"]])
