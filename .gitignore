@@ -2,3 +2,5 @@ db_creds.yaml
 aws_creds.yaml
 __pycache__
 __pycache__/
+data        # 
+tmp
